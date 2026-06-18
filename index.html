@@ -342,12 +342,15 @@
 <!-- Pemakanan -->
 <div class="box">
   <div class="section-bar">
-    <h2>🍼 Pemakanan</h2>
+    <h2>🍼 Menyusu &amp; Makan</h2>
     <button class="sec-action" onclick="clearFeedings()">Kosong</button>
   </div>
   <div class="fg">
     <div class="fi-wrap" id="fiList"></div>
-    <button class="add-btn" onclick="addFeeding()">＋ Tambah Waktu Makan</button>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="add-btn" style="flex:1;margin-top:0;" onclick="addFeeding('susu')">🍼 Tambah Menyusu</button>
+      <button class="add-btn" style="flex:1;margin-top:0;color:var(--warn);border-color:var(--rule);" onclick="addFeeding('makan')">🥣 Tambah Makan</button>
+    </div>
   </div>
   <div class="photo-strip" id="photoStrip-feed">
     <button class="add-photo-btn" onclick="triggerPhoto('feed')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>
@@ -357,22 +360,16 @@
 
 <!-- Tidur -->
 <div class="box">
-  <div class="section-bar"><h2>😴 Tidur Siang</h2></div>
-  <div class="fg">
-    <span class="fl">Waktu Tidur</span>
-    <div class="frow">
-      <div>
-        <span class="fl-sm">Mula tidur</span>
-        <input type="time" id="inSleepStart" oninput="S.sleepStart=this.value;R()">
-      </div>
-      <div>
-        <span class="fl-sm">Bangun tidur</span>
-        <input type="time" id="inSleepEnd" oninput="S.sleepEnd=this.value;R()">
-      </div>
-    </div>
+  <div class="section-bar">
+    <h2>😴 Waktu Tidur</h2>
+    <button class="sec-action" onclick="clearSleeps()">Kosong</button>
   </div>
   <div class="fg">
-    <span class="fl">Kualiti Tidur</span>
+    <div class="fi-wrap" id="sleepList"></div>
+    <button class="add-btn" onclick="addSleep()">＋ Tambah Waktu Tidur</button>
+  </div>
+  <div class="fg">
+    <span class="fl">Kualiti Tidur Keseluruhan</span>
     <div class="seg">
       <button class="active" data-key="sleepQ" data-val="Lena 😴" onclick="SS('sleepQ','Lena 😴',this)">Lena 😴</button>
       <button data-key="sleepQ" data-val="Kurang" onclick="SS('sleepQ','Kurang',this)">Kurang 😕</button>
@@ -573,7 +570,7 @@
 
   <!-- Feeding -->
   <div class="psec">
-    <div class="psec-label">🍼 Pemakanan</div>
+    <div class="psec-label">🍼 Menyusu &amp; Makan</div>
     <div id="pFeedings">
       <div class="prow"><span class="pl">—</span><span class="pv muted">Belum diisi</span></div>
     </div>
@@ -582,8 +579,12 @@
 
   <!-- Sleep -->
   <div class="psec">
-    <div class="psec-label">😴 Tidur Siang</div>
-    <div class="prow"><span class="pl">Waktu tidur</span><span class="pv" id="pSleep">—</span></div>
+    <div class="psec-label">😴 Waktu Tidur</div>
+    <div id="pSleepList"><div class="prow"><span class="pl">—</span><span class="pv muted">Belum diisi</span></div></div>
+    <div class="prow" id="pSleepTotalRow" style="display:none;border-top:1.5px solid var(--rule);margin-top:4px;padding-top:8px">
+      <span class="pl" style="font-weight:600">Jumlah tidur</span>
+      <span class="pv" style="color:var(--purple);font-weight:700" id="pSleepTotal">—</span>
+    </div>
     <div class="prow"><span class="pl">Kualiti</span><span class="pv" id="pSleepQ">—</span></div>
     <div class="p-photo-strip" id="pPhotos-sleep" style="display:none;padding:8px 0 2px"></div>
   </div>
@@ -710,7 +711,7 @@ let S = {
   name:'', age:'', date:todayISO(), staff:'',
   arrive:'', leave:'',
   feedings:[],
-  sleepStart:'', sleepEnd:'', sleepQ:'Lena 😴',
+  sleeps:[], sleepQ:'Lena 😴',
   wet:0, poop:0,
   mood:'Aktif 🌤️', cry:'Tidak', social:'Baik 😄',
   acts:[],
@@ -766,7 +767,7 @@ function flagRow(rowId,valId,txt,isFlag){
 // ===== PROGRESS =====
 function updateProg(){
   const checks=[S.name,S.date,S.staff,S.feedings.length?'y':'',
-    S.sleepStart||S.sleepEnd?'y':'',S.wet||S.poop?'y':'',S.temp,S.notes||S.parentMsg?'y':''];
+    S.sleeps.length?'y':'',S.wet||S.poop?'y':'',S.temp,S.notes||S.parentMsg?'y':''];
   const pct=Math.round(checks.filter(Boolean).length/checks.length*100);
   document.getElementById('progFill').style.width=pct+'%';
   document.getElementById('progPct').textContent=pct+'%';
@@ -786,12 +787,36 @@ function R(){
   // Feedings
   const fEl=document.getElementById('pFeedings');
   fEl.innerHTML=S.feedings.length
-    ? S.feedings.map((f,i)=>`<div class="prow"><span class="pl">Makan ${i+1} — ${fmtTime(f.t)}</span><span class="pv">${f.d||'—'}</span></div>`).join('')
+    ? S.feedings.map((f,i)=>{
+        const ico=f.tp==='makan'?'🥣':'🍼';
+        const lbl=f.tp==='makan'?`Makan ${i+1}`:`Susu ${i+1}`;
+        return `<div class="prow"><span class="pl">${ico} ${lbl} — ${fmtTime(f.t)}</span><span class="pv">${f.d||'—'}</span></div>`;
+      }).join('')
     : '<div class="prow"><span class="pl">—</span><span class="pv muted">Belum diisi</span></div>';
 
-  // Sleep
-  const dur=calcDur(S.sleepStart,S.sleepEnd);
-  document.getElementById('pSleep').textContent=`${fmtTime(S.sleepStart)} → ${fmtTime(S.sleepEnd)} ${dur}`;
+  // Sleep — multiple entries
+  const slEl=document.getElementById('pSleepList');
+  if(S.sleeps.length){
+    let totalMins=0;
+    slEl.innerHTML=S.sleeps.map((sl,i)=>{
+      const durTxt=calcDur(sl.s,sl.e);
+      if(sl.s&&sl.e){
+        const diff=(sl.e.split(':').reduce((a,v,ii)=>a+(ii?Number(v):Number(v)*60),0))
+                  -(sl.s.split(':').reduce((a,v,ii)=>a+(ii?Number(v):Number(v)*60),0));
+        if(diff>0) totalMins+=diff;
+      }
+      return `<div class="prow"><span class="pl">😴 Tidur ${i+1} — ${fmtTime(sl.s)}</span><span class="pv">${fmtTime(sl.e)} ${durTxt}</span></div>`;
+    }).join('');
+    const tr=document.getElementById('pSleepTotalRow');
+    if(totalMins>0){
+      tr.style.display='';
+      const th=Math.floor(totalMins/60),tm=totalMins%60;
+      document.getElementById('pSleepTotal').textContent=`${th>0?th+'j ':''}${tm>0?tm+'m':''} jumlah`;
+    } else { tr.style.display='none'; }
+  } else {
+    slEl.innerHTML='<div class="prow"><span class="pl">—</span><span class="pv muted">Belum diisi</span></div>';
+    document.getElementById('pSleepTotalRow').style.display='none';
+  }
   document.getElementById('pSleepQ').textContent=S.sleepQ;
 
   // Diaper
@@ -875,25 +900,27 @@ function toggleAct(btn){
 
 // ===== FEEDINGS =====
 function renderFeedings(){
-  document.getElementById('fiList').innerHTML=S.feedings.map((f,i)=>`
-    <div class="fi">
-      <div class="fi-badge">${i+1}</div>
+  const inp='font-size:15px;padding:6px 2px;border:none;border-bottom:1.5px solid var(--rule);background:transparent;width:100%;color:var(--ink)';
+  document.getElementById('fiList').innerHTML=S.feedings.map((f,i)=>{
+    const ico=f.tp==='makan'?'🥣':'🍼';
+    const ph=f.tp==='makan'?'cth: bubur nasi':'cth: 120ml / 10 min';
+    return `<div class="fi">
+      <div class="fi-badge" style="background:${f.tp==='makan'?'var(--yellow-tint)':'var(--pink-tint)'};color:${f.tp==='makan'?'var(--warn)':'var(--pink-deep)'};font-size:14px">${ico}</div>
       <div class="fi-time">
         <input type="time" value="${f.t||''}" placeholder="--:--"
-          onchange="S.feedings[${i}].t=this.value;R()"
-          style="font-size:15px;padding:6px 2px;border:none;border-bottom:1.5px solid var(--rule);background:transparent;width:100%;color:var(--ink)">
+          onchange="S.feedings[${i}].t=this.value;R()" style="${inp}">
       </div>
       <div class="fi-detail">
-        <input type="text" value="${f.d||''}" placeholder="cth: 120ml susu"
-          oninput="S.feedings[${i}].d=this.value;R()"
-          style="font-size:15px;padding:6px 2px;border:none;border-bottom:1.5px solid var(--rule);background:transparent;width:100%;color:var(--ink)">
+        <input type="text" value="${f.d||''}" placeholder="${ph}"
+          oninput="S.feedings[${i}].d=this.value;R()" style="${inp}">
       </div>
       <button class="fi-del" onclick="removeFeeding(${i})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
-function addFeeding(){
-  if(S.feedings.length>=6){toast('Maksimum 6 waktu makan','err');return;}
-  S.feedings.push({t:'',d:''});
+function addFeeding(tp='susu'){
+  if(S.feedings.length>=10){toast('Maksimum 10 entri','err');return;}
+  S.feedings.push({t:'',d:'',tp});
   renderFeedings();R();
 }
 function removeFeeding(i){
@@ -904,6 +931,42 @@ function clearFeedings(){
   if(!S.feedings.length) return;
   if(!confirm('Kosongkan rekod makan?')) return;
   S.feedings=[];renderFeedings();R();
+}
+
+// ===== SLEEPS =====
+function renderSleeps(){
+  const inp='font-size:15px;padding:6px 2px;border:none;border-bottom:1.5px solid var(--rule);background:transparent;width:100%;color:var(--ink)';
+  document.getElementById('sleepList').innerHTML=S.sleeps.map((sl,i)=>`
+    <div class="fi">
+      <div class="fi-badge" style="background:#E6F0FB;color:#2B7FD4;font-size:14px">😴</div>
+      <div class="fi-time">
+        <span class="fl-sm" style="font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;display:block">Mula</span>
+        <input type="time" value="${sl.s||''}"
+          onchange="S.sleeps[${i}].s=this.value;R()" style="${inp}">
+      </div>
+      <div style="flex:0 0 auto;color:var(--ink-faint);padding:0 4px;align-self:flex-end;padding-bottom:8px">→</div>
+      <div class="fi-time">
+        <span class="fl-sm" style="font-size:10.5px;color:var(--ink-faint);margin-bottom:2px;display:block">Bangun</span>
+        <input type="time" value="${sl.e||''}"
+          onchange="S.sleeps[${i}].e=this.value;R()" style="${inp}">
+      </div>
+      <div style="flex:0 0 36px;text-align:center;align-self:flex-end;padding-bottom:6px;font-family:'Space Mono',monospace;font-size:10px;color:var(--purple)">${sl.s&&sl.e?calcDur(sl.s,sl.e):''}</div>
+      <button class="fi-del" onclick="removeSleep(${i})">✕</button>
+    </div>`).join('');
+}
+function addSleep(){
+  if(S.sleeps.length>=8){toast('Maksimum 8 sesi tidur','err');return;}
+  S.sleeps.push({s:'',e:''});
+  renderSleeps();R();
+}
+function removeSleep(i){
+  S.sleeps.splice(i,1);
+  renderSleeps();R();
+}
+function clearSleeps(){
+  if(!S.sleeps.length) return;
+  if(!confirm('Kosongkan rekod tidur?')) return;
+  S.sleeps=[];renderSleeps();R();
 }
 
 // ===== MEDICATION =====
@@ -935,7 +998,7 @@ function resetForm(){
   S={
     name:'',age:'',date:todayISO(),staff:'',
     arrive:'',leave:'',feedings:[],
-    sleepStart:'',sleepEnd:'',sleepQ:'Lena 😴',
+    sleeps:[],sleepQ:'Lena 😴',
     wet:0,poop:0,
     mood:'Aktif 🌤️',cry:'Tidak',social:'Baik 😄',
     acts:[],
@@ -945,12 +1008,13 @@ function resetForm(){
     photos:{feed:[],sleep:[],act:[],health:[],notes:[]}
   };
   ['inName','inAge','inDate','inStaff','inArrive','inLeave',
-   'inSleepStart','inSleepEnd','inTemp','inHealthNote','inNotes','inParentMsg']
+   'inTemp','inHealthNote','inNotes','inParentMsg']
   .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('inDate').value=S.date;
   document.getElementById('wetVal').textContent='0';
   document.getElementById('poopVal').textContent='0';
   document.getElementById('fiList').innerHTML='';
+  document.getElementById('sleepList').innerHTML='';
   document.getElementById('medSec').style.display='none';
   // Reset segs
   document.querySelectorAll('.seg button').forEach(b=>{
@@ -974,14 +1038,32 @@ function buildMsg(){
   if(S.arrive||S.leave) t+=`⏰ Hadir: ${fmtTime(S.arrive)}  |  Balik: ${fmtTime(S.leave)}\n`;
   t+=`\n`;
 
-  t+=`*🍼 PEMAKANAN*\n`;
-  if(!S.feedings.length) t+=`• Tiada rekod makan\n`;
-  else S.feedings.forEach((f,i)=>t+=`• Makan ${i+1}: ${fmtTime(f.t)}${f.d?' — '+f.d:''}\n`);
+  t+=`*🍼 MENYUSU & MAKAN*\n`;
+  if(!S.feedings.length) t+=`• Tiada rekod\n`;
+  else {
+    let susCount=0,mkCount=0;
+    S.feedings.forEach(f=>{
+      if(f.tp==='makan'){mkCount++;t+=`• 🥣 Makan ${mkCount}: ${fmtTime(f.t)}${f.d?' — '+f.d:''}\n`;}
+      else{susCount++;t+=`• 🍼 Susu ${susCount}: ${fmtTime(f.t)}${f.d?' — '+f.d:''}\n`;}
+    });
+  }
   t+=`\n`;
 
-  const dur=calcDur(S.sleepStart,S.sleepEnd);
-  t+=`*😴 TIDUR SIANG*\n`;
-  t+=`• ${fmtTime(S.sleepStart)} → ${fmtTime(S.sleepEnd)} ${dur}\n`;
+  t+=`*😴 WAKTU TIDUR*\n`;
+  if(!S.sleeps.length){ t+=`• Tiada rekod tidur\n`; }
+  else {
+    let totalMins=0;
+    S.sleeps.forEach((sl,i)=>{
+      const dur=calcDur(sl.s,sl.e);
+      t+=`• Tidur ${i+1}: ${fmtTime(sl.s)} → ${fmtTime(sl.e)} ${dur}\n`;
+      if(sl.s&&sl.e){
+        const diff=(sl.e.split(':').reduce((a,v,ii)=>a+(ii?Number(v):Number(v)*60),0))
+                  -(sl.s.split(':').reduce((a,v,ii)=>a+(ii?Number(v):Number(v)*60),0));
+        if(diff>0) totalMins+=diff;
+      }
+    });
+    if(totalMins>0){const th=Math.floor(totalMins/60),tm=totalMins%60;t+=`• Jumlah: ${th>0?th+'j ':''}${tm>0?tm+'m':''}\n`;}
+  }
   t+=`• Kualiti: ${S.sleepQ}\n\n`;
 
   t+=`*🧷 LAMPIN*\n• Wet: ×${S.wet}  |  Poop: ×${S.poop}\n\n`;
@@ -1061,13 +1143,14 @@ function loadRec(i){
     const r=arr[i];
     S={...r};
     const map={inName:'name',inAge:'age',inDate:'date',inStaff:'staff',
-      inArrive:'arrive',inLeave:'leave',inSleepStart:'sleepStart',
-      inSleepEnd:'sleepEnd',inTemp:'temp',inHealthNote:'healthNote',
+      inArrive:'arrive',inLeave:'leave',
+      inTemp:'temp',inHealthNote:'healthNote',
       inNotes:'notes',inParentMsg:'parentMsg'};
     Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.value=S[k]||'';});
     document.getElementById('wetVal').textContent=S.wet||0;
     document.getElementById('poopVal').textContent=S.poop||0;
     renderFeedings();
+    renderSleeps();
     // Restore segs
     document.querySelectorAll('.seg button[data-key]').forEach(b=>{
       b.classList.toggle('active', S[b.dataset.key]===b.dataset.val);
@@ -1195,6 +1278,7 @@ async function shareRec(){
 // ===== INIT =====
 document.getElementById('inDate').value=S.date;
 renderFeedings();
+renderSleeps();
 renderAllPhotoStrips();
 R();
 renderHist();
