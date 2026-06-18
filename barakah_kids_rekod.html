@@ -239,6 +239,26 @@
   .toast.ok{color:var(--green-deep);}
   .toast.err{color:var(--warn);}
 
+
+  /* ====== PHOTO UPLOAD ====== */
+  .photo-strip{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px 14px;border-top:1px solid var(--rule);}
+  .photo-thumb{position:relative;width:78px;height:78px;flex:0 0 auto;}
+  .photo-thumb img{width:78px;height:78px;object-fit:cover;border-radius:10px;border:1.5px solid var(--rule);display:block;}
+  .del-photo{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;
+    background:var(--pink-deep);color:#fff;border:2.5px solid var(--card);
+    font-size:12px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);line-height:1;}
+  .del-photo:active{background:var(--pink);}
+  .add-photo-btn{width:78px;height:78px;flex:0 0 auto;border:2px dashed var(--rule);
+    border-radius:10px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;color:var(--pink-deep);font-size:11px;font-weight:600;
+    background:var(--pink-tint);cursor:pointer;}
+  .add-photo-btn:active{background:var(--pink-mid);}
+  .add-photo-icon{font-size:24px;line-height:1;}
+  .p-photo-strip{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .p-photo-strip::-webkit-scrollbar{display:none;}
+  .p-photo-strip img{width:110px;height:110px;object-fit:cover;border-radius:10px;flex:0 0 auto;border:1.5px solid var(--rule);}
+
   @media(prefers-reduced-motion:reduce){
     .progress-fill,.seg button,.chip,.save-btn,.share-btn{transition:none;}
   }
@@ -329,6 +349,10 @@
     <div class="fi-wrap" id="fiList"></div>
     <button class="add-btn" onclick="addFeeding()">＋ Tambah Waktu Makan</button>
   </div>
+  <div class="photo-strip" id="photoStrip-feed">
+    <button class="add-photo-btn" onclick="triggerPhoto('feed')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>
+  </div>
+  <input type="file" id="photoInput-feed" accept="image/*" multiple style="display:none" onchange="handlePhotos('feed',this)">
 </div>
 
 <!-- Tidur -->
@@ -355,6 +379,10 @@
       <button data-key="sleepQ" data-val="Susah Tidur" onclick="SS('sleepQ','Susah Tidur',this)">Susah Tidur 😩</button>
     </div>
   </div>
+  <div class="photo-strip" id="photoStrip-sleep">
+    <button class="add-photo-btn" onclick="triggerPhoto('sleep')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>
+  </div>
+  <input type="file" id="photoInput-sleep" accept="image/*" multiple style="display:none" onchange="handlePhotos('sleep',this)">
 </div>
 
 <!-- Lampin -->
@@ -431,6 +459,10 @@
       <button class="chip" data-act="Senaman Jari ✋" onclick="toggleAct(this)">Senaman Jari ✋</button>
     </div>
   </div>
+  <div class="photo-strip" id="photoStrip-act">
+    <button class="add-photo-btn" onclick="triggerPhoto('act')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>
+  </div>
+  <input type="file" id="photoInput-act" accept="image/*" multiple style="display:none" onchange="handlePhotos('act',this)">
 </div>
 
 <!-- Kesihatan -->
@@ -474,6 +506,10 @@
     <span class="fl">Aduan / Catatan Kesihatan</span>
     <textarea id="inHealthNote" placeholder="cth: Ada selsema ringan, hidung berair pagi tadi..." oninput="S.healthNote=this.value;R()"></textarea>
   </div>
+  <div class="photo-strip" id="photoStrip-health">
+    <button class="add-photo-btn" onclick="triggerPhoto('health')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>
+  </div>
+  <input type="file" id="photoInput-health" accept="image/*" multiple style="display:none" onchange="handlePhotos('health',this)">
 </div>
 
 <!-- Ubatan -->
@@ -511,6 +547,10 @@
     <span class="fl">💬 Mesej Khas untuk Ibu Bapa</span>
     <textarea id="inParentMsg" placeholder="cth: Tolong bawa tuala tambahan esok ya. Terima kasih! 😊" oninput="S.parentMsg=this.value;R()"></textarea>
   </div>
+  <div class="photo-strip" id="photoStrip-notes">
+    <button class="add-photo-btn" onclick="triggerPhoto('notes')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>
+  </div>
+  <input type="file" id="photoInput-notes" accept="image/*" multiple style="display:none" onchange="handlePhotos('notes',this)">
 </div>
 
 <!-- ======== PRATONTON ======== -->
@@ -537,6 +577,7 @@
     <div id="pFeedings">
       <div class="prow"><span class="pl">—</span><span class="pv muted">Belum diisi</span></div>
     </div>
+    <div class="p-photo-strip" id="pPhotos-feed" style="display:none;padding:2px 0 6px"></div>
   </div>
 
   <!-- Sleep -->
@@ -544,6 +585,7 @@
     <div class="psec-label">😴 Tidur Siang</div>
     <div class="prow"><span class="pl">Waktu tidur</span><span class="pv" id="pSleep">—</span></div>
     <div class="prow"><span class="pl">Kualiti</span><span class="pv" id="pSleepQ">—</span></div>
+    <div class="p-photo-strip" id="pPhotos-sleep" style="display:none;padding:8px 0 2px"></div>
   </div>
 
   <!-- Diaper -->
@@ -569,6 +611,7 @@
     <div class="act-tags" id="pActs">
       <span style="font-size:13px;color:var(--ink-faint)">Tiada aktiviti dipilih</span>
     </div>
+    <div class="p-photo-strip" id="pPhotos-act" style="display:none;padding:8px 0 2px"></div>
   </div>
 
   <!-- Kesihatan -->
@@ -582,6 +625,7 @@
     <div id="pHealthNoteWrap" style="display:none;padding:8px 0 2px">
       <div class="note-box" id="pHealthNote"></div>
     </div>
+    <div class="p-photo-strip" id="pPhotos-health" style="display:none;padding:8px 0 2px"></div>
   </div>
 
   <!-- Ubatan -->
@@ -594,6 +638,7 @@
   <div class="psec">
     <div class="psec-label">📝 Nota Pengasuh</div>
     <div class="note-box" id="pNotes">Tiada nota tambahan hari ini.</div>
+    <div class="p-photo-strip" id="pPhotos-notes" style="display:none;padding:8px 0 2px"></div>
   </div>
 
   <!-- Mesej Parent -->
@@ -671,7 +716,8 @@ let S = {
   acts:[],
   temp:'', demam:'Tidak ✅', batuk:'Tidak ✅', muntah:'Tidak ✅', ruam:'Tidak ✅', healthNote:'',
   medGiven:'Tidak', meds:[],
-  notes:'', parentMsg:''
+  notes:'', parentMsg:'',
+  photos:{feed:[],sleep:[],act:[],health:[],notes:[]}
 };
 
 // ===== HELPERS =====
@@ -784,6 +830,20 @@ function R(){
 
   // Notes
   document.getElementById('pNotes').textContent=S.notes||'Tiada nota tambahan hari ini.';
+
+  // Photos in preview
+  ['feed','sleep','act','health','notes'].forEach(sec=>{
+    const el=document.getElementById('pPhotos-'+sec);
+    if(!el) return;
+    const photos=(S.photos[sec]||[]);
+    if(photos.length){
+      el.style.display='flex';
+      el.innerHTML=photos.map(p=>`<img src="${p}" alt="foto">`).join('');
+    } else {
+      el.style.display='none';
+      el.innerHTML='';
+    }
+  });
   const pmS=document.getElementById('pMsgSec');
   if(S.parentMsg){pmS.style.display='';document.getElementById('pMsg').textContent=S.parentMsg;}
   else pmS.style.display='none';
@@ -881,7 +941,8 @@ function resetForm(){
     acts:[],
     temp:'',demam:'Tidak ✅',batuk:'Tidak ✅',muntah:'Tidak ✅',ruam:'Tidak ✅',healthNote:'',
     medGiven:'Tidak',meds:[],
-    notes:'',parentMsg:''
+    notes:'',parentMsg:'',
+    photos:{feed:[],sleep:[],act:[],health:[],notes:[]}
   };
   ['inName','inAge','inDate','inStaff','inArrive','inLeave',
    'inSleepStart','inSleepEnd','inTemp','inHealthNote','inNotes','inParentMsg']
@@ -1017,6 +1078,7 @@ function loadRec(i){
     });
     // Medication
     if(S.medGiven==='Ya') toggleMed(true);
+    renderAllPhotoStrips();
     R();
     window.scrollTo({top:0,behavior:'smooth'});
     toast('✅ Rekod dimuatkan!','ok');
@@ -1029,13 +1091,97 @@ function clearHist(){
   toast('Rekod dipadam','ok');
 }
 
+
+// ===== PHOTO FUNCTIONS =====
+async function compressImg(file,maxW=900,q=0.78){
+  return new Promise(res=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const ratio=Math.min(maxW/img.width,maxW/img.height,1);
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*ratio);
+      c.height=Math.round(img.height*ratio);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',q));
+    };
+    img.onerror=()=>res(null);
+    img.src=url;
+  });
+}
+function triggerPhoto(sec){
+  document.getElementById('photoInput-'+sec).click();
+}
+async function handlePhotos(sec,input){
+  const files=Array.from(input.files);
+  if(!files.length) return;
+  const max=4;
+  const cur=(S.photos[sec]||[]).length;
+  const allowed=Math.min(files.length,max-cur);
+  if(allowed<=0){toast('Maksimum 4 gambar per bahagian','err');input.value='';return;}
+  toast('⏳ Memproses gambar...','ok');
+  for(let i=0;i<allowed;i++){
+    const b64=await compressImg(files[i]);
+    if(b64){
+      if(!S.photos[sec]) S.photos[sec]=[];
+      S.photos[sec].push(b64);
+    }
+  }
+  input.value='';
+  renderPhotoStrip(sec);
+  R();
+  toast('✅ Gambar ditambah!','ok');
+}
+function renderPhotoStrip(sec){
+  const strip=document.getElementById('photoStrip-'+sec);
+  if(!strip) return;
+  const photos=(S.photos[sec]||[]);
+  const max=4;
+  strip.innerHTML=photos.map((p,i)=>`
+    <div class="photo-thumb">
+      <img src="${p}" alt="Gambar ${i+1}">
+      <button class="del-photo" onclick="removePhoto('${sec}',${i})">✕</button>
+    </div>`).join('')
+    +(photos.length<max?`<button class="add-photo-btn" onclick="triggerPhoto('${sec}')"><span class="add-photo-icon">📷</span><span>Gambar</span></button>`:'');
+}
+function removePhoto(sec,i){
+  S.photos[sec].splice(i,1);
+  renderPhotoStrip(sec);
+  R();
+}
+function renderAllPhotoStrips(){
+  ['feed','sleep','act','health','notes'].forEach(s=>renderPhotoStrip(s));
+}
+
 // ===== SHARE =====
 async function shareRec(){
   if(!S.name){toast('Sila isi nama anak dahulu','err');return;}
   const txt=buildMsg();
+  // Collect all photos across sections
+  const allPhotos=[...Object.values(S.photos)].flat().filter(Boolean);
+
+  // Try share with images first (iOS 15+)
+  if(allPhotos.length && navigator.share && navigator.canShare){
+    try{
+      const files=allPhotos.map((b64,i)=>{
+        const [head,data]=b64.split(',');
+        const mime=head.match(/:(.*?);/)[1];
+        const bin=atob(data);
+        const arr=new Uint8Array(bin.length);
+        for(let j=0;j<bin.length;j++) arr[j]=bin.charCodeAt(j);
+        return new File([arr],`barakah_foto_${i+1}.jpg`,{type:mime});
+      });
+      if(navigator.canShare({files})){
+        await navigator.share({title:`${S.name} — Rekod Harian BKC`,text:txt,files});
+        return;
+      }
+    }catch(e){if(e.name==='AbortError') return;}
+  }
+  // Text-only native share
   if(navigator.share){
     try{await navigator.share({title:`${S.name} — Rekod Harian BKC`,text:txt});return;}
-    catch{}
+    catch(e){if(e.name==='AbortError') return;}
   }
   // Direct WhatsApp
   try{window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');return;}catch{}
@@ -1049,6 +1195,7 @@ async function shareRec(){
 // ===== INIT =====
 document.getElementById('inDate').value=S.date;
 renderFeedings();
+renderAllPhotoStrips();
 R();
 renderHist();
 </script>
